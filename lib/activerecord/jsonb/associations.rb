@@ -60,10 +60,6 @@ ActiveSupport.on_load :active_record do
     ActiveRecord::JSONB::Associations::Preloader::Association
   )
 
-  ::ActiveRecord::Associations::Preloader::HasMany.prepend(
-    ActiveRecord::JSONB::Associations::Preloader::HasMany
-  )
-
   ::ActiveRecord::Associations::JoinDependency::JoinAssociation.prepend(
     ActiveRecord::JSONB::Associations::JoinDependency::JoinAssociation
   )
