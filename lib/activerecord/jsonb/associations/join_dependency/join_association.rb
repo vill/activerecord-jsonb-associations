@@ -3,6 +3,50 @@ module ActiveRecord
     module Associations
       module JoinDependency
         module JoinAssociation #:nodoc:
+          def join_constraints(foreign_table, foreign_klass, join_type, alias_tracker)
+            joins = []
+
+            # The chain starts with the target table, but we want to end with it here (makes
+            # more sense in this context), so we reverse
+            reflection.chain.reverse_each.with_index(1) do |reflection, i|
+              table = tables[-i]
+              klass = reflection.klass
+
+              if (reflection.options.keys & %i[foreign_store store]).any?
+                join_keys   = reflection.join_keys
+                key         = join_keys.key
+                foreign_key = join_keys.foreign_key
+
+                nodes = build_constraint(klass, table, key, foreign_table, foreign_key)
+
+                joins << table.create_join(table, table.create_on(nodes), join_type)
+              else
+                join_scope = reflection.join_scope(table, foreign_table, foreign_klass)
+
+                arel = join_scope.arel(alias_tracker.aliases)
+                nodes = arel.constraints.first
+
+                others, children = nodes.children.partition do |node|
+                  !fetch_arel_attribute(node) { |attr| attr.relation.name == table.name }
+                end
+
+                nodes = table.create_and(children)
+
+                joins << table.create_join(table, table.create_on(nodes), join_type)
+
+                unless others.empty?
+                  joins.concat arel.join_sources
+                  append_constraints(joins.last, others)
+                end
+              end
+
+              # The current table in this iteration becomes the foreign table in the next
+              foreign_table, foreign_klass = table, klass
+            end
+
+            joins
+          end
+
           # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
           def build_constraint(klass, table, key, foreign_table, foreign_key)
             if reflection.options.key?(:foreign_store)
