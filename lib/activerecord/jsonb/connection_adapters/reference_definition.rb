@@ -16,10 +16,10 @@ module ActiveRecord
 
           super(
             name,
-            polymorphic: false,
-            index: true,
-            foreign_key: false,
-            type: :bigint,
+            polymorphic: polymorphic,
+            index: index,
+            foreign_key: foreign_key,
+            type: type,
             **options
           )
         end
