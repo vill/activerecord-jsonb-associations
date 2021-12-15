@@ -3,30 +3,32 @@ module ActiveRecord
     module Associations
       module AssociationScope #:nodoc:
         # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
-        def last_chain_scope(scope, table, owner_reflection, owner)
-          reflection = owner_reflection.instance_variable_get(:@reflection)
+        def last_chain_scope(scope, reflection, owner)
           return super unless reflection
 
           join_keys = reflection.join_keys
           key = join_keys.key
-          value = transform_value(owner[join_keys.foreign_key])
+          foreign_key = join_keys.foreign_key
+          table = reflection.aliased_table
+          value = transform_value(owner[foreign_key])
+          association = reflection&.instance_variable_get(:@association)
+          options = association&.options || reflection&.options
 
-          if reflection.options.key?(:foreign_store)
+          if options&.key?(:foreign_store)
             apply_jsonb_scope(
               scope,
-              jsonb_equality(table, reflection.options[:foreign_store], key),
-              key, value
+              jsonb_equality(
+                table, options[:foreign_store], key, value
+              )
             )
-          elsif reflection && reflection.options.key?(:store)
-            return super if reflection.belongs_to?
-            pluralized_key = key.pluralize
+          elsif options&.key?(:store)
+            return super if association.is_a?(ActiveRecord::Associations::BelongsToAssociation)
 
             apply_jsonb_scope(
               scope,
               jsonb_containment(
-                table, reflection.options[:store], pluralized_key
-              ),
-              pluralized_key, value
+                table, options[:store], key.pluralize, value
+              )
             )
           else
             super
@@ -34,24 +36,20 @@ module ActiveRecord
         end
         # rubocop:enable Metrics/MethodLength, Metrics/AbcSize
 
-        def apply_jsonb_scope(scope, predicate, key, value)
-          scope.where!(predicate).tap do |arel_scope|
-            arel_scope.where_clause.binds << Relation::QueryAttribute.new(
-              key.to_s, value, ActiveModel::Type::String.new
-            )
-          end
+        def apply_jsonb_scope(scope, predicate)
+          scope.where!(predicate)
         end
 
-        def jsonb_equality(table, jsonb_column, key)
+        def jsonb_equality(table, jsonb_column, key, value)
           Arel::Nodes::JSONBDashDoubleArrow.new(
             table, table[jsonb_column], key
-          ).eq(Arel::Nodes::BindParam.new)
+          ).eq(Relation::QueryAttribute.new(key, value, ActiveModel::Type::String.new))
         end
 
-        def jsonb_containment(table, jsonb_column, key)
+        def jsonb_containment(table, jsonb_column, key, value)
           Arel::Nodes::JSONBHashArrow.new(
             table, table[jsonb_column], key
-          ).contains(Arel::Nodes::BindParam.new)
+          ).contains(Relation::QueryAttribute.new(key, value, ActiveModel::Type::String.new))
         end
       end
     end
