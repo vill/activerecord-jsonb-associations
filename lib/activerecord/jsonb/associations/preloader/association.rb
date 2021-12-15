@@ -6,6 +6,8 @@ module ActiveRecord
           def records_for(ids)
             return super unless reflection.options.key?(:foreign_store)
 
+            table = klass.arel_table
+
             scope.where(
               Arel::Nodes::JSONBHashArrow.new(
                 table,
