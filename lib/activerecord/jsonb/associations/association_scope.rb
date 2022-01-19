@@ -12,7 +12,7 @@ module ActiveRecord
           table = reflection.aliased_table
           value = transform_value(owner[foreign_key])
           association = reflection&.instance_variable_get(:@association)
-          options = association&.options || reflection&.options
+          options = association&.options || reflection.try(:options)
 
           if options&.key?(:foreign_store)
             apply_jsonb_scope(
