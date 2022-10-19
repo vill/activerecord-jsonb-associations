@@ -1,7 +1,5 @@
 # activerecord-json-associations
 
-[![Gem Version](https://badge.fury.io/rb/activerecord-jsonb-associations.svg)](https://badge.fury.io/rb/activerecord-jsonb-associations)
-
 Use PostgreSQL JSONB fields to store association information of your models.
 
 This gem was created as a solution to this [task](http://cultofmartians.com/tasks/active-record-jsonb-associations.html) from [EvilMartians](http://evilmartians.com).
@@ -9,7 +7,7 @@ This gem was created as a solution to this [task](http://cultofmartians.com/task
 **Requirements:**
 
 - PostgreSQL (>= 9.6)
-- (jsonb_accessor)[https://github.com/madeintandem/jsonb_accessor] or (attr_json)[https://github.com/jrochkind/attr_json]
+- [jsonb_accessor](https://github.com/madeintandem/jsonb_accessor) or [attr_json](https://github.com/jrochkind/attr_json)
 
 ## Usage
 
