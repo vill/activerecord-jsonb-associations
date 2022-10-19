@@ -9,6 +9,7 @@ This gem was created as a solution to this [task](http://cultofmartians.com/task
 **Requirements:**
 
 - PostgreSQL (>= 9.6)
+- (jsonb_accessor)[https://github.com/madeintandem/jsonb_accessor] or (attr_json)[https://github.com/jrochkind/attr_json]
 
 ## Usage
 
@@ -19,12 +20,18 @@ You can store all foreign keys of your model in one JSONB column, without having
 ```ruby
 class Profile < ActiveRecord::Base
   # Setting additional :store option on :belongs_to association
-  # enables saving of foreign ids in :extra JSONB column 
+  # enables saving of foreign ids in :extra JSONB column
   belongs_to :user, store: :extra
+
+  jsonb_accessor :json_attributes,
+                 user_id: [:integer, limit: 8]
 end
 
 class SocialProfile < ActiveRecord::Base
   belongs_to :user, store: :extra
+
+  jsonb_accessor :json_attributes,
+                 user_id: [:integer, limit: 8]
 end
 
 class User < ActiveRecord::Base
