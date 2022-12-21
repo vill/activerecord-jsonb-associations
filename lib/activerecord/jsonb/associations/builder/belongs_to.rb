@@ -7,6 +7,12 @@ module ActiveRecord
             super + [:store]
           end
 
+          def define_accessors(mixin, reflection)
+            add_association_accessor_methods(mixin, reflection) if reflection.options.key?(:store)
+
+            super
+          end
+
           def add_association_accessor_methods(mixin, reflection)
             foreign_key = reflection.foreign_key.to_s
 
