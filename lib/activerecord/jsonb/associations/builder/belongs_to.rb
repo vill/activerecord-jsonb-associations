@@ -47,7 +47,7 @@ module ActiveRecord
                   key = key.to_s
 
                   if self.class.jsonb_foreign_key_store.keys.include?(key)
-                    public_send(self.class.jsonb_foreign_key_store[key])[key] = value
+                    public_send("\#{key}=", value)
                   else
                     super
                   end
