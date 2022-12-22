@@ -33,10 +33,11 @@ module ActiveRecord
                 end
 
                 def _read_attribute(attr_name)
-                  key = attr_name.to_s
+                  key   = attr_name.to_s
+                  store = self.class.jsonb_foreign_key_store[key]
 
-                  if self.class.jsonb_foreign_key_store.keys.include?(key)
-                    public_send(self.class.jsonb_foreign_key_store[key])[key]
+                  if store && has_attribute?(store)
+                    public_send(store)[key]
                   else
                     super
                   end
@@ -46,7 +47,7 @@ module ActiveRecord
                   key = key.to_s
 
                   if self.class.jsonb_foreign_key_store.keys.include?(key)
-                    public_send(self.class.jsonb_foreign_key_store[key])[key] = value
+                    public_send("\#{key}=", value)
                   else
                     super
                   end
