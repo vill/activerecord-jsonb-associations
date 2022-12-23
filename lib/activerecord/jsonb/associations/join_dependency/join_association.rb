@@ -12,7 +12,7 @@ module ActiveRecord
               table = tables[-i]
               klass = reflection.klass
 
-              if (reflection.options.keys & %i[foreign_store store]).any?
+              if reflection.respond_to?(:options) && (reflection.options.keys & %i[foreign_store store]).any?
                 join_keys   = reflection.join_keys
                 key         = join_keys.key
                 foreign_key = join_keys.foreign_key
