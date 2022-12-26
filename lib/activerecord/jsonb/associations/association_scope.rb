@@ -2,6 +2,34 @@ module ActiveRecord
   module JSONB
     module Associations
       module AssociationScope #:nodoc:
+        def next_chain_scope(scope, reflection, next_reflection)
+          join_keys     = reflection.join_keys
+          key           = join_keys.key
+          foreign_key   = join_keys.foreign_key
+          table         = reflection.aliased_table
+          foreign_table = next_reflection.aliased_table
+          options       = reflection.instance_variable_get(:@association)&.options || {}
+
+          constraint =
+            if options.key?(:foreign_store)
+              ::Arel::Nodes::SqlLiteral.new(
+                  "CAST(#{table.name}.#{key} AS TEXT)"
+                ).eq(
+                Arel::Nodes::JSONBDashDoubleArrow.new(foreign_table, foreign_table[options[:foreign_store]], foreign_key)
+              )
+            else
+              table[key].eq(foreign_table[foreign_key])
+            end
+
+          if reflection.type
+            value = transform_value(next_reflection.klass.polymorphic_name)
+            # TODO: Will need to fix for polymorphic associations.
+            scope = apply_scope(scope, table, reflection.type, value)
+          end
+
+          scope.joins!(join(foreign_table, constraint))
+        end
+
         # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
         def last_chain_scope(scope, reflection, owner)
           return super unless reflection
