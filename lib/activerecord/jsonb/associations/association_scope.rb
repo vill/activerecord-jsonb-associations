@@ -3,27 +3,26 @@ module ActiveRecord
     module Associations
       module AssociationScope #:nodoc:
         def next_chain_scope(scope, reflection, next_reflection)
+          options = reflection.instance_variable_get(:@association)&.options || {}
+
+          return super unless options.key?(:foreign_store)
+
           join_keys     = reflection.join_keys
           key           = join_keys.key
           foreign_key   = join_keys.foreign_key
           table         = reflection.aliased_table
           foreign_table = next_reflection.aliased_table
-          options       = reflection.instance_variable_get(:@association)&.options || {}
 
           constraint =
-            if options.key?(:foreign_store)
-              ::Arel::Nodes::SqlLiteral.new(
-                  "CAST(#{table.name}.#{key} AS TEXT)"
-                ).eq(
-                Arel::Nodes::JSONBDashDoubleArrow.new(foreign_table, foreign_table[options[:foreign_store]], foreign_key)
-              )
-            else
-              table[key].eq(foreign_table[foreign_key])
-            end
+            ::Arel::Nodes::SqlLiteral.new(
+                "CAST(#{table.name}.#{key} AS TEXT)"
+              ).eq(
+              Arel::Nodes::JSONBDashDoubleArrow.new(foreign_table, foreign_table[options[:foreign_store]], foreign_key)
+            )
 
+          # TODO: It is necessary to fix the logic for polymorphic associations, taking into account changes in the `store_base_sti_class` library
           if reflection.type
             value = transform_value(next_reflection.klass.polymorphic_name)
-            # TODO: Will need to fix for polymorphic associations.
             scope = apply_scope(scope, table, reflection.type, value)
           end
 
