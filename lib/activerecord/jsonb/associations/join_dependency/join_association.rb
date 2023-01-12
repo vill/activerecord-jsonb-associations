@@ -49,7 +49,12 @@ module ActiveRecord
 
           # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
           def build_constraint(klass, table, key, foreign_table, foreign_key)
-            if reflection.options.key?(:foreign_store)
+            if reflection.options.key?(:foreign_store) && reflection.options.key?(:through)
+              build_eq_constraint(
+                foreign_table, foreign_table[reflection.options[:foreign_store]],
+                foreign_key, table, key
+              )
+            elsif reflection.options.key?(:foreign_store)
               build_eq_constraint(
                 table, table[reflection.options[:foreign_store]],
                 key, foreign_table, foreign_key
