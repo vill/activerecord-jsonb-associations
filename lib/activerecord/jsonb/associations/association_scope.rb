@@ -12,12 +12,18 @@ module ActiveRecord
           foreign_key   = join_keys.foreign_key
           table         = reflection.aliased_table
           foreign_table = next_reflection.aliased_table
+          klass         = reflection.klass
+          key_type      = klass.type_for_attribute(key).type
+
+          type =
+            case key_type
+              when :integer then 'bigint'
+              else ActiveRecord::Base.connection.class::NATIVE_DATABASE_TYPES[key_type][:name]
+            end
 
           constraint =
-            ::Arel::Nodes::SqlLiteral.new(
-                "CAST(#{table.name}.#{key} AS TEXT)"
-              ).eq(
-              Arel::Nodes::JSONBDashDoubleArrow.new(foreign_table, foreign_table[options[:foreign_store]], foreign_key)
+            table[key].eq(
+              Arel::Nodes::NamedFunction.new('CAST', [ Arel::Nodes::JSONBDashDoubleArrow.new(foreign_table, foreign_table[options[:foreign_store]], foreign_key).as(type)])
             )
 
           # TODO: It is necessary to fix the logic for polymorphic associations, taking into account changes in the `store_base_sti_class` library

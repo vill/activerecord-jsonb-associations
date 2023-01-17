@@ -51,16 +51,19 @@ module ActiveRecord
           def build_constraint(klass, table, key, foreign_table, foreign_key)
             if reflection.options.key?(:foreign_store) && reflection.options.key?(:through)
               build_eq_constraint(
+                klass,
                 foreign_table, foreign_table[reflection.options[:foreign_store]],
                 foreign_key, table, key
               )
             elsif reflection.options.key?(:foreign_store)
               build_eq_constraint(
+                klass,
                 table, table[reflection.options[:foreign_store]],
                 key, foreign_table, foreign_key
               )
             elsif reflection.options.key?(:store) && reflection.belongs_to?
               build_eq_constraint(
+                klass,
                 foreign_table, foreign_table[reflection.options[:store]],
                 foreign_key, table, key
               )
@@ -75,13 +78,17 @@ module ActiveRecord
           end
           # rubocop:enable Metrics/AbcSize, Metrics/MethodLength
 
-          def build_eq_constraint(
-            table, jsonb_column, key, foreign_table, foreign_key
-          )
-            Arel::Nodes::JSONBDashDoubleArrow.new(table, jsonb_column, key).eq(
-              ::Arel::Nodes::SqlLiteral.new(
-                "CAST(#{foreign_table.name}.#{foreign_key} AS text)"
-              )
+          def build_eq_constraint(klass, table, jsonb_column, key, foreign_table, foreign_key)
+            foreign_key_type = klass.type_for_attribute(foreign_key).type
+
+            type =
+              case foreign_key_type
+              when :integer then 'bigint'
+              else ActiveRecord::Base.connection.class::NATIVE_DATABASE_TYPES[foreign_key_type][:name]
+              end
+
+            foreign_table[foreign_key].eq(
+              Arel::Nodes::NamedFunction.new('CAST', [Arel::Nodes::JSONBDashDoubleArrow.new(table, jsonb_column, key).as(type)])
             )
           end
 
